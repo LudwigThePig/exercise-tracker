@@ -1,16 +1,43 @@
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
-
 const cors = require('cors')
-
 const mongoose = require('mongoose')
-mongoose.connect(process.env.MLAB_URI || 'mongodb://localhost/exercise-track' )
 
 app.use(cors())
 
 app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
+
+mongoose.connect(process.env.MONGO_URI, (err)=>{
+  err ? 
+    console.log(`Sorry you cannot connect to the databas: ${err}`) 
+    : console.log(`You are now connected to the Mongo Database!`)
+})
+
+const User = require(__dirname + '/userSchema.js');
+
+app.post('/api/exercise/new-user', (req, res, next)=>{
+  var reqUser = req.body.username;
+  if (reqUser){
+    const newUser = { username: reqUser }; //default value for the log array is []... right?
+    User.findOne({username: newUser.username}, (err, data)=>{
+      if (err)  next(err);
+          if (data){ 
+            res.send("Username already taken... fool")
+          } else {
+          User.create(newUser, (err, user)=>{
+          err ? next(err) : res.json({username: user.username, id: user._id})        
+          });
+        }
+      
+  });
+    
+  } else {
+    res.send("Please enter a usernaem");
+    }
+});
+
 
 
 app.use(express.static('public'))
