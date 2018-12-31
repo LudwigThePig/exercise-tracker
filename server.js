@@ -1,9 +1,11 @@
+//https://glitch.com/edit/#!/abounding-diamond?path=server.js:21:22
+
+
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const mongoose = require('mongoose')
-
 app.use(cors())
 
 app.use(bodyParser.urlencoded({extended: false}))
@@ -16,6 +18,8 @@ mongoose.connect(process.env.MONGO_URI, (err)=>{
 })
 
 const User = require(__dirname + '/userSchema.js');
+const Exercise = require(__dirname + '/exercise.js');
+
 
 app.post('/api/exercise/new-user', (req, res, next)=>{
   var reqUser = req.body.username;
@@ -23,21 +27,46 @@ app.post('/api/exercise/new-user', (req, res, next)=>{
     const newUser = { username: reqUser }; //default value for the log array is []... right?
     User.findOne({username: newUser.username}, (err, data)=>{
       if (err)  next(err);
-          if (data){ 
-            res.send("Username already taken... fool")
-          } else {
-          User.create(newUser, (err, user)=>{
+      if (data){ 
+        res.send("Username already taken... fool")
+      } else {
+        User.create(newUser, (err, user)=>{
           err ? next(err) : res.json({username: user.username, id: user._id})        
-          });
-        }
-      
-  });
+        });
+      }
+    });
     
   } else {
-    res.send("Please enter a usernaem");
+    res.send("Please enter a username");
     }
 });
 
+app.post('/api/exercise/add', (req, res, next)=>{
+  const userId = req.body.userId;
+  const description = req.body.description;
+  let duration = req.body.duration;
+  User.findById(userId, (err, data)=>{
+    
+    if (err) next(err);
+    
+    if (data){
+      
+      const date = req.body.date ? new Date(req.body.date) : new Date();
+      duration = parseInt(duration);
+      
+      
+      const activity = new Exercise({userId, description, duration, date});
+      
+      data.log.concat([activity]); //note: .push() is no longer supported by MongoDB
+      activity.save((err, data) => {
+        if (err) next(err);
+        res.json(data);
+      });
+    } else {
+      res.send("This does not appear to be a valid userId");
+    }
+  })
+})
 
 
 app.use(express.static('public'))
