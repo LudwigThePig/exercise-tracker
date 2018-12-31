@@ -57,7 +57,6 @@ app.post('/api/exercise/add', (req, res, next)=>{
       
       const activity = new Exercise({userId, description, duration, date});
       
-      data.log.concat([activity]); //note: .push() is no longer supported by MongoDB
       activity.save((err, data) => {
         if (err) next(err);
         res.json(data);
@@ -66,6 +65,55 @@ app.post('/api/exercise/add', (req, res, next)=>{
       res.send("This does not appear to be a valid userId");
     }
   })
+})
+
+/*
+INSPIRATION
+GET /api/exercise/log?{userId}[&from][&to][&limit]
+*/
+app.get('/api/exercise/:log', (req, res)=>{
+  let userId = req.query.id,
+      from = req.query.from,
+      to = req.query.to,
+      limit = req.query.limit;
+  let query = {};
+  
+  if (from !== undefined && isNaN(Date.parse(from))){
+    res.send({error: 'The [from] date is formated poorly'});
+  } else if (to !== undefined && (Date.parse(to))){
+    res.send({error: 'The [to] date is foramted poorly'});
+  } else if (limit !== undefined &&isNaN(limit)){
+    res.send({error: '[limit] is not a number]'})
+  } else {
+    
+    User.findOne({userId}, (err, data)=>{
+    if (err) res.send({error: 'user not found'});
+      console.log(data);
+      query.userId = data.id;
+      
+      
+      if (from !== undefined) {
+        from = new Date(from);
+        query.date = { $gte: from};
+      }
+
+      if (to !== undefined) {
+        to = new Date(to);
+        to.setDate(to.getDate() + 1); // Add 1 day to include date
+        query.date = { $lt: to};
+      }
+      
+      limit = parseInt(limit);
+      
+      console.log(query);
+      
+      Exercise.find(query).select('username description duration date').limit(limit).exec((err, exercises)=>{
+        if(err) res.send({error: 'Query could not return'});
+        res.json(exercises);
+      })
+    })
+    
+  }
 })
 
 
