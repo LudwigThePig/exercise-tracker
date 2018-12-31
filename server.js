@@ -1,6 +1,3 @@
-//https://glitch.com/edit/#!/abounding-diamond?path=server.js:21:22
-
-
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
@@ -24,7 +21,7 @@ const Exercise = require(__dirname + '/exercise.js');
 app.post('/api/exercise/new-user', (req, res, next)=>{
   var reqUser = req.body.username;
   if (reqUser){
-    const newUser = { username: reqUser }; //default value for the log array is []... right?
+    const newUser = { username: reqUser };
     User.findOne({username: newUser.username}, (err, data)=>{
       if (err)  next(err);
       if (data){ 
@@ -88,7 +85,6 @@ app.get('/api/exercise/:log', (req, res)=>{
     
     User.findOne({userId}, (err, data)=>{
     if (err) res.send({error: 'user not found'});
-      console.log(data);
       query.userId = data.id;
       
       
@@ -104,15 +100,12 @@ app.get('/api/exercise/:log', (req, res)=>{
       }
       
       limit = parseInt(limit);
-      
-      console.log(query);
-      
+            
       Exercise.find(query).select('username description duration date').limit(limit).exec((err, exercises)=>{
         if(err) res.send({error: 'Query could not return'});
         res.json(exercises);
       })
-    })
-    
+    })  
   }
 })
 
@@ -123,23 +116,18 @@ app.get('/', (req, res) => {
 });
 
 
-// Not found middleware
 app.use((req, res, next) => {
   return next({status: 404, message: 'not found'})
 })
 
-// Error Handling middleware
 app.use((err, req, res, next) => {
   let errCode, errMessage
 
   if (err.errors) {
-    // mongoose validation error
     errCode = 400 // bad request
     const keys = Object.keys(err.errors)
-    // report the first validation error
     errMessage = err.errors[keys[0]].message
   } else {
-    // generic or custom error
     errCode = err.status || 500
     errMessage = err.message || 'Internal Server Error'
   }
